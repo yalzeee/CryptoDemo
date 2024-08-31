@@ -1,0 +1,11 @@
+framework module coinbase_wallet_sdk {
+  umbrella header "coinbase_wallet_sdk-umbrella.h"
+
+  export *
+  module * { export * }
+}
+
+module coinbase_wallet_sdk.Swift {
+  header "coinbase_wallet_sdk-Swift.h"
+  requires objc
+}
