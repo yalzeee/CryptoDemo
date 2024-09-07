@@ -38,6 +38,15 @@ class ConnectPageState extends State<ConnectPage> with WidgetsBindingObserver {
   bool _shouldDismissQrCode = true;
   bool _initialized = false;
   late IWalletConnectModalService _walletConnectModalService;
+  List<String> _logs = [];
+
+  void addLog(String message) {
+    setState(() {
+      _logs.add(message);
+      if (_logs.length > 100) _logs.removeAt(0); // Limit the number of logs
+    });
+    print(message); // Also print to console for debugging
+  }
 
   @override
   void initState() {
@@ -136,6 +145,16 @@ class ConnectPageState extends State<ConnectPage> with WidgetsBindingObserver {
       );
     }
 
+    // final bitcoinChains =
+    //     _selectedChains.where((e) => e.type == ChainType.bitcoin).toList();
+    // if (bitcoinChains.isNotEmpty) {
+    //   optionalNamespaces['bitcoin'] = RequiredNamespace(
+    //     chains: bitcoinChains.map((c) => c.chainId).toList(),
+    //     methods: [],
+    //     events: [],
+    //   );
+    // }
+
     if (optionalNamespaces.isEmpty) {
       requiredNamespaces = {};
     } else {
@@ -197,144 +216,164 @@ class ConnectPageState extends State<ConnectPage> with WidgetsBindingObserver {
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: StyleConstants.linear8),
-      children: <Widget>[
-        Column(
-          children: [
-            const Text(
-              'Flutter Dapp',
-              style: StyleConstants.subtitleText,
-              textAlign: TextAlign.center,
+    return Stack(
+      children: [
+        ListView(
+          padding:
+              const EdgeInsets.symmetric(horizontal: StyleConstants.linear8),
+          children: <Widget>[
+            Column(
+              children: [
+                const Text(
+                  'Flutter Dapp',
+                  style: StyleConstants.subtitleText,
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                    "Demo showing how to connect to a wallet and use the wallet's functions"),
+                // FutureBuilder<PackageInfo>(
+                //   future: PackageInfo.fromPlatform(),
+                //   builder: (context, snapshot) {
+                //     if (!snapshot.hasData) {
+                //       return const SizedBox.shrink();
+                //     }
+                //     final v = snapshot.data!.version;
+                //     final b = snapshot.data!.buildNumber;
+                //     const f = String.fromEnvironment('FLUTTER_APP_FLAVOR');
+                //     return Text('$v-$f ($b) - SDK v$packageVersion');
+                //   },
+                // ),
+              ],
             ),
-            Text(
-                "Demo showing how to connect to a wallet and use the wallet's functions"),
-            // FutureBuilder<PackageInfo>(
-            //   future: PackageInfo.fromPlatform(),
-            //   builder: (context, snapshot) {
-            //     if (!snapshot.hasData) {
-            //       return const SizedBox.shrink();
-            //     }
-            //     final v = snapshot.data!.version;
-            //     final b = snapshot.data!.buildNumber;
-            //     const f = String.fromEnvironment('FLUTTER_APP_FLAVOR');
-            //     return Text('$v-$f ($b) - SDK v$packageVersion');
-            //   },
+            SizedBox(
+              height: StyleConstants.linear48,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    StringConstants.testnetsOnly,
+                    style: StyleConstants.buttonText,
+                  ),
+                  Switch(
+                    value: _testnetOnly,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedChains.clear();
+                        _testnetOnly = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Text('EVM Chains:', style: StyleConstants.buttonText),
+            const SizedBox(height: StyleConstants.linear8),
+            Wrap(
+              spacing: 10.0,
+              children: evmChainButtons,
+            ),
+            const Divider(),
+            const Text('Non EVM Chains:', style: StyleConstants.buttonText),
+            Wrap(
+              spacing: 10.0,
+              children: nonEvmChainButtons,
+            ),
+            const Divider(),
+            if (_initialized)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: StyleConstants.linear8),
+                  const Text(
+                    'Use WalletConnectModal:',
+                    style: StyleConstants.buttonText,
+                  ),
+                  const SizedBox(height: StyleConstants.linear8),
+                  ElevatedButton(
+                    onPressed: () => _onConnect(
+                      showToast: (m) async {
+                        await showPlatformToast(
+                            child: Text(m), context: context);
+                      },
+                      closeModal: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    ),
+                    child: const Text('Connect Wallet'),
+                  ),
+                ],
+              ),
+            const SizedBox(height: StyleConstants.linear8),
+            const Divider(),
+            // Column(
+            //   crossAxisAlignment: CrossAxisAlignment.start,
+            //   children: [
+            //     const SizedBox(height: StyleConstants.linear8),
+            //     const Text(
+            //       'Use custom connection:',
+            //       style: StyleConstants.buttonText,
+            //     ),
+            //     const SizedBox(height: StyleConstants.linear8),
+            //     SizedBox(
+            //       width: double.infinity,
+            //       child: ElevatedButton(
+            //         style: _buttonStyle,
+            //         onPressed: _selectedChains.isEmpty
+            //             ? null
+            //             : () => _onConnect(
+            //                   showToast: (m) async {
+            //                     await showPlatformToast(
+            //                         child: Text(m), context: context);
+            //                   },
+            //                   closeModal: () {
+            //                     if (Navigator.canPop(context)) {
+            //                       Navigator.of(context).pop();
+            //                     }
+            //                   },
+            //                 ),
+            //         child: const Text(
+            //           StringConstants.connect,
+            //           style: StyleConstants.buttonText,
+            //         ),
+            //       ),
+            //     ),
+            //     const SizedBox(height: StyleConstants.linear8),
+            //     SizedBox(
+            //       width: double.infinity,
+            //       child: ElevatedButton(
+            //         style: _buttonStyle,
+            //         onPressed: _selectedChains.isEmpty
+            //             ? null
+            //             : () => _oneClickAuth(
+            //                   closeModal: () {
+            //                     if (Navigator.canPop(context)) {
+            //                       Navigator.of(context).pop();
+            //                     }
+            //                   },
+            //                   showToast: (message) {
+            //                     showPlatformToast(
+            //                         child: Text(message), context: context);
+            //                   },
+            //                 ),
+            //         child: const Text(
+            //           'One-Click Auth',
+            //           style: StyleConstants.buttonText,
+            //         ),
+            //       ),
+            //     ),
+            //   ],
             // ),
+            const SizedBox(height: StyleConstants.linear16),
           ],
         ),
-        SizedBox(
-          height: StyleConstants.linear48,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                StringConstants.testnetsOnly,
-                style: StyleConstants.buttonText,
-              ),
-              Switch(
-                value: _testnetOnly,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedChains.clear();
-                    _testnetOnly = value;
-                  });
-                },
-              ),
-            ],
-          ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: LogDisplay(logs: _logs),
         ),
-        const Text('EVM Chains:', style: StyleConstants.buttonText),
-        const SizedBox(height: StyleConstants.linear8),
-        Wrap(
-          spacing: 10.0,
-          children: evmChainButtons,
-        ),
-        const Divider(),
-        const Text('Non EVM Chains:', style: StyleConstants.buttonText),
-        Wrap(
-          spacing: 10.0,
-          children: nonEvmChainButtons,
-        ),
-        const Divider(),
-        if (_initialized)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: StyleConstants.linear8),
-              const Text(
-                'Use WalletConnectModal:',
-                style: StyleConstants.buttonText,
-              ),
-              const SizedBox(height: StyleConstants.linear8),
-              WalletConnectModalConnect(
-                service: _walletConnectModalService,
-                width: double.infinity,
-                height: 50.0,
-              ),
-            ],
-          ),
-        const SizedBox(height: StyleConstants.linear8),
-        const Divider(),
-        // Column(
-        //   crossAxisAlignment: CrossAxisAlignment.start,
-        //   children: [
-        //     const SizedBox(height: StyleConstants.linear8),
-        //     const Text(
-        //       'Use custom connection:',
-        //       style: StyleConstants.buttonText,
-        //     ),
-        //     const SizedBox(height: StyleConstants.linear8),
-        //     SizedBox(
-        //       width: double.infinity,
-        //       child: ElevatedButton(
-        //         style: _buttonStyle,
-        //         onPressed: _selectedChains.isEmpty
-        //             ? null
-        //             : () => _onConnect(
-        //                   showToast: (m) async {
-        //                     await showPlatformToast(
-        //                         child: Text(m), context: context);
-        //                   },
-        //                   closeModal: () {
-        //                     if (Navigator.canPop(context)) {
-        //                       Navigator.of(context).pop();
-        //                     }
-        //                   },
-        //                 ),
-        //         child: const Text(
-        //           StringConstants.connect,
-        //           style: StyleConstants.buttonText,
-        //         ),
-        //       ),
-        //     ),
-        //     const SizedBox(height: StyleConstants.linear8),
-        //     SizedBox(
-        //       width: double.infinity,
-        //       child: ElevatedButton(
-        //         style: _buttonStyle,
-        //         onPressed: _selectedChains.isEmpty
-        //             ? null
-        //             : () => _oneClickAuth(
-        //                   closeModal: () {
-        //                     if (Navigator.canPop(context)) {
-        //                       Navigator.of(context).pop();
-        //                     }
-        //                   },
-        //                   showToast: (message) {
-        //                     showPlatformToast(
-        //                         child: Text(message), context: context);
-        //                   },
-        //                 ),
-        //         child: const Text(
-        //           'One-Click Auth',
-        //           style: StyleConstants.buttonText,
-        //         ),
-        //       ),
-        //     ),
-        //   ],
-        // ),
-        const SizedBox(height: StyleConstants.linear16),
       ],
     );
   }
@@ -357,52 +396,40 @@ class ConnectPageState extends State<ConnectPage> with WidgetsBindingObserver {
     Function(String message)? showToast,
     VoidCallback? closeModal,
   }) async {
-    debugPrint('[SampleDapp] Creating connection and session');
-    // It is currently safer to send chains approvals on optionalNamespaces
-    // but depending on Wallet implementation you may need to send some (for innstance eip155:1) as required
+    addLog('[SampleDapp] Creating connection and session');
     final connectResponse = await widget.web3App.connect(
       requiredNamespaces: requiredNamespaces,
       optionalNamespaces: optionalNamespaces,
     );
 
-    final encodedUri = Uri.encodeComponent(connectResponse.uri.toString());
-    String flavor = '-${const String.fromEnvironment('FLUTTER_APP_FLAVOR')}';
-    flavor = flavor.replaceAll('-production', '');
-    final uri = 'wcflutterwallet$flavor://wc?uri=$encodedUri';
-    if (await canLaunchUrlString(uri)) {
-      final openApp = await showDialog(
-        // ignore: use_build_context_synchronously
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            content: const Text('Do you want to open with Flutter Wallet'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Show QR'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Open'),
-              ),
-            ],
-          );
-        },
-      );
-      if (openApp) {
-        launchUrlString(uri, mode: LaunchMode.externalApplication);
-      } else {
-        _showQrCode(connectResponse.uri.toString());
-      }
-    } else {
-      _showQrCode(connectResponse.uri.toString());
-    }
+    addLog('Connection URI: ${connectResponse.uri}');
+    addLog('Waiting before launching wallet...');
+    await Future.delayed(const Duration(seconds: 1));
+    addLog('Attempting to launch wallet');
+    await _launchWallet(connectResponse.uri.toString());
 
-    debugPrint('[SampleDapp] Awaiting session proposal settlement');
-    final _ = await connectResponse.session.future;
+    addLog('[SampleDapp] Awaiting session proposal settlement');
+    final session = await connectResponse.session.future;
 
+    addLog('Connection established. Session topic: ${session.topic}');
     showToast?.call(StringConstants.connectionEstablished);
     closeModal?.call();
+  }
+
+  Future<void> _launchWallet(String uri) async {
+    final encodedUri = Uri.encodeComponent(uri);
+    final universalLink = 'https://metamask.app.link/wc?uri=$encodedUri';
+
+    addLog('Attempting to launch wallet with universal link: $universalLink');
+
+    if (await canLaunchUrlString(universalLink)) {
+      addLog('Launching universal link');
+      await launchUrlString(universalLink,
+          mode: LaunchMode.externalApplication);
+    } else {
+      addLog('Unable to launch wallet. Showing QR code.');
+      _showQrCode(uri);
+    }
   }
 
   Future<void> _showQrCode(String uri) async {
@@ -678,6 +705,67 @@ class _QRCodeView extends StatelessWidget {
           child: const Text('Copy URL to Clipboard'),
         ),
       ],
+    );
+  }
+}
+
+class LogDisplay extends StatefulWidget {
+  final List<String> logs;
+
+  const LogDisplay({Key? key, required this.logs}) : super(key: key);
+
+  @override
+  _LogDisplayState createState() => _LogDisplayState();
+}
+
+class _LogDisplayState extends State<LogDisplay> {
+  bool _isExpanded = false;
+  double _height = 100.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onVerticalDragUpdate: (details) {
+        setState(() {
+          _height -= details.delta.dy;
+          _height = _height.clamp(50.0, MediaQuery.of(context).size.height / 2);
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: _isExpanded ? _height : 50.0,
+        color: Colors.black.withOpacity(_isExpanded ? 0.8 : 0.5),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              child: Container(
+                height: 30,
+                color: Colors.grey[800],
+                child: Center(
+                  child: Icon(
+                    _isExpanded
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_up,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widget.logs
+                      .map((log) =>
+                          Text(log, style: TextStyle(color: Colors.white)))
+                      .toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
